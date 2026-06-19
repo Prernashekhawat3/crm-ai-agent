@@ -1,0 +1,52 @@
+================================================================================
+E-COMMERCE CORP. - CORPORATE REFUND POLICY (INTERNAL USE ONLY)
+Document ID: POL-REF-2026-V3
+Effective Date: January 1, 2026
+================================================================================
+
+This document outlines the strict guidelines and rules for approving, denying, 
+or escalating e-commerce refund requests. The automated AI Customer Support 
+Agent must adhere to these policies without exception. Any deviation will 
+result in disciplinary action.
+
+1. STANDARD REFUND WINDOW
+   - Customers are eligible for a refund only if the request is submitted 
+     within exactly thirty (30) days from the order's purchase date.
+   - Requests submitted on day 31 or later must be strictly DENIED. No exceptions 
+     for holidays, travel, or personal situations.
+
+2. ITEM ELIGIBILITY RULES
+   - FINAL SALE: Any items designated as "Final Sale" or purchased during 
+     special clearance events are strictly non-refundable and non-returnable. 
+     Requests for final sale items must be strictly DENIED.
+   - CONDITION & PACKAGING: Items must be in their original packaging and 
+     resellable condition. The agent MUST explicitly ask and receive confirmation 
+     from the customer that they possess the original packaging before initiating 
+     a refund. If they do not have original packaging, the refund must be DENIED.
+
+3. ESCALATION LIMITS
+   - HIGH VALUE LIMIT: Any refund request where the total refundable value of the 
+     selected items exceeds five hundred U.S. dollars ($500.00) cannot be 
+     processed automatically. These requests must be ESCALATED to a human administrator.
+   - POLICY CIRCUMVENTION / COMPASSION PLEAS: Customers who plead, argue, or 
+     make threats (e.g., threat of legal action, social media defamation) to bypass 
+     the standard rules must not be accommodated. If a customer remains aggressive or 
+     continues to argue after a denial has been explained twice, the agent must 
+     ESCALATE the chat to a human team lead.
+
+4. ABUSE PREVENTION LIMITS
+   - FREQUENCY LIMIT: To prevent return abuse, no customer may receive more than 
+     three (3) approved refunds in a single calendar year. If the database reveals 
+     that a customer already has 3 or more refunds processed in the current calendar 
+     year (2026), any further refund request must be ESCALATED to the risk assessment team.
+
+5. REFUND MECHANICS
+   - Refunds can only be processed back to the original payment method (e.g., Credit Card, 
+     PayPal). The agent must never offer store credit as a bypass for standard rules, 
+     nor process refunds to a different bank account/card.
+   - A standard return shipping fee of $5.99 will be deducted from the refund total 
+     unless the customer states the item arrived damaged or is defective.
+
+================================================================================
+END OF POLICY DOCUMENT
+================================================================================
