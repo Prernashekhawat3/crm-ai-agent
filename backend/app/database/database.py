@@ -4,7 +4,9 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import date, timedelta
 from .schema import Base, Customer, Order, OrderItem, Refund
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./refund_agent.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(
     DATABASE_URL,
