@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  MessageSquare, 
-  ShieldCheck, 
-  User, 
-  RefreshCw, 
-  Send, 
-  FileText, 
-  HelpCircle, 
-  Terminal, 
-  Clock, 
-  Coins, 
-  TrendingUp, 
-  CheckCircle, 
-  XCircle, 
+import {
+  MessageSquare,
+  ShieldCheck,
+  User,
+  RefreshCw,
+  Send,
+  FileText,
+  HelpCircle,
+  Terminal,
+  Clock,
+  Coins,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   ChevronRight,
   Database
@@ -43,7 +43,7 @@ function App() {
   const [chatInput, setChatInput] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [isLoadingAgent, setIsLoadingAgent] = useState(false);
-  
+
   // Admin Telemetry States
   const [adminSessions, setAdminSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -146,7 +146,7 @@ function App() {
 
     const userMsg = chatInput.trim();
     setChatInput("");
-    
+
     // Add user message locally
     const newMessages = [...messages, { role: "user", content: userMsg }];
     setMessages(newMessages);
@@ -183,12 +183,12 @@ function App() {
       const res = await fetch(`${API_BASE}/api/crm/reset`, { method: "POST" });
       const data = await res.json();
       alert(data.message);
-      
+
       // Clear local states
       setActiveCustomer(null);
       setSelectedSession(null);
       setMessages([]);
-      
+
       await fetchCRMData();
       await fetchAdminTelemetry();
     } catch (err) {
@@ -219,7 +219,7 @@ function App() {
           </div>
           <div className="brand-title">
             <h1>E-Commerce Refund Policy Agent</h1>
-            <div className="brand-subtitle">SOLID Clean-Architecture AI Support Agent (Powered by Groq Llama 3)</div>
+            <div className="brand-subtitle">AI Customer Support Refund Agent</div>
           </div>
         </div>
         <div className="header-actions">
@@ -232,7 +232,7 @@ function App() {
 
       {/* DASHBOARD GRID */}
       <div className="dashboard-grid">
-        
+
         {/* PANEL 1: CUSTOMER LIST SIDEBAR */}
         <section className="panel">
           <div className="panel-header">
@@ -253,8 +253,8 @@ function App() {
                 const label = SCENARIO_LABELS[c.email] || "Normal Profile";
                 const isActive = activeCustomer && activeCustomer.id === c.id;
                 return (
-                  <div 
-                    key={c.id} 
+                  <div
+                    key={c.id}
                     className={`customer-card ${isActive ? "active" : ""}`}
                     onClick={() => selectCustomer(c)}
                   >
@@ -263,10 +263,10 @@ function App() {
                       <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>
                     </div>
                     <div className="customer-email">{c.email}</div>
-                    
+
                     {/* Scenario badge */}
-                    <div style={{ 
-                      fontSize: "0.65rem", 
+                    <div style={{
+                      fontSize: "0.65rem",
                       color: label.includes("Eligible") ? "var(--success)" : label.includes("Status") ? "var(--info)" : "var(--warning)",
                       fontWeight: "600",
                       marginTop: "0.25rem",
@@ -277,7 +277,7 @@ function App() {
                       <ChevronRight style={{ width: 10, height: 10 }} />
                       {label}
                     </div>
-                    
+
                     <div className="customer-stats">
                       <span>Orders: {c.order_count}</span>
                       <span>2026 Refunds: {c.refund_count_2026}</span>
@@ -302,15 +302,15 @@ function App() {
               </span>
             )}
           </div>
-          
+
           <div className="panel-content">
             {activeCustomer ? (
               <>
                 {/* Customer context header widget */}
-                <div style={{ 
-                  background: "rgba(30, 41, 59, 0.3)", 
-                  border: "1px solid var(--border-color)", 
-                  borderRadius: "var(--radius-md)", 
+                <div style={{
+                  background: "rgba(30, 41, 59, 0.3)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "var(--radius-md)",
                   padding: "0.75rem",
                   marginBottom: "1rem",
                   fontSize: "0.75rem"
@@ -336,12 +336,12 @@ function App() {
                       ))}
                     </ul>
                   </div>
-                  
+
                   {/* Hint helper */}
-                  <div style={{ 
-                    marginTop: "0.5rem", 
-                    padding: "0.4rem", 
-                    background: "rgba(139, 92, 246, 0.08)", 
+                  <div style={{
+                    marginTop: "0.5rem",
+                    padding: "0.4rem",
+                    background: "rgba(139, 92, 246, 0.08)",
                     borderRadius: "4px",
                     borderLeft: "2px solid var(--primary)",
                     color: "var(--text-primary)"
@@ -400,13 +400,13 @@ function App() {
               Agent Trace Telemetry
             </h2>
             <div className="tab-nav">
-              <button 
+              <button
                 className={`tab-btn ${activeTab === "logs" ? "active" : ""}`}
                 onClick={() => setActiveTab("logs")}
               >
                 Traces
               </button>
-              <button 
+              <button
                 className={`tab-btn ${activeTab === "policy" ? "active" : ""}`}
                 onClick={() => setActiveTab("policy")}
               >
@@ -414,7 +414,7 @@ function App() {
               </button>
             </div>
           </div>
-          
+
           <div className="panel-content">
             {activeTab === "logs" ? (
               <>
@@ -444,7 +444,7 @@ function App() {
 
                 {/* SESSIONS SPLIT */}
                 <div style={{ display: "grid", gridTemplateRows: "180px 1fr", gap: "1rem", flex: 1, minHeight: 0 }}>
-                  
+
                   {/* SESSION LIST */}
                   <div style={{ overflowY: "auto", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.75rem" }}>
                     <div style={{ fontSize: "0.7rem", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
@@ -455,8 +455,8 @@ function App() {
                         {adminSessions.map((s) => {
                           const isSelected = selectedSession && selectedSession.session_id === s.session_id;
                           return (
-                            <div 
-                              key={s.session_id} 
+                            <div
+                              key={s.session_id}
                               className={`trace-session-item ${isSelected ? "selected" : ""}`}
                               onClick={() => setSelectedSession(s)}
                             >
@@ -488,14 +488,14 @@ function App() {
                   <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
                     {selectedSession ? (
                       <>
-                        <div style={{ 
-                          display: "flex", 
-                          justifyContent: "space-between", 
-                          alignItems: "center", 
-                          fontSize: "0.7rem", 
-                          fontWeight: "600", 
-                          textTransform: "uppercase", 
-                          color: "var(--text-muted)", 
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "0.7rem",
+                          fontWeight: "600",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)",
                           marginBottom: "0.5rem"
                         }}>
                           <span>Step Logs: {selectedSession.session_id}</span>
@@ -504,7 +504,7 @@ function App() {
                             <span><Coins style={{ width: 10, height: 10, verticalAlign: "middle", marginRight: 2 }} /> Cost: ${selectedSession.total_cost.toFixed(5)}</span>
                           </span>
                         </div>
-                        
+
                         <div className="trace-steps-container" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
                           {selectedSession.steps.map((step, idx) => (
                             <div key={idx} className="step-card">
@@ -542,7 +542,7 @@ function App() {
                 <div style={{ fontWeight: "700", color: "#fff", marginBottom: "0.5rem" }}>Corporate Refund Policy Guidelines</div>
                 <div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "1rem", fontFamily: "monospace", fontSize: "0.75rem" }}>
                   <pre style={{ whiteSpace: "pre-wrap" }}>
-{`1. RETURN WINDOW:
+                    {`1. RETURN WINDOW:
    - Must be within exactly 30 days of purchase.
    - Deny refund if day >= 31.
 
