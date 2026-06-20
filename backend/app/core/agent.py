@@ -413,12 +413,50 @@ Here is the official refund policy you must enforce:
         # If it reached max hops without returning a text message
         timeout_msg = "I am escalating this ticket because the request is taking too long to process. A human representative will contact you."
         self.log_manager.add_step(session_id, "error", "Agent loop reached maximum reasoning depth (5 hops).")
-        self.repo.create_refund(
-            order_id=messages[-1].get("order_id", 0),
-            amount=0.0,
-            status="Escalated",
-            reason="Timeout: Maximum agent reasoning depth reached."
-        )
+        
+        # Try to find a valid order_id from the tool call history
+        order_id = None
+        for msg in reversed(llm_messages):
+            if "tool_calls" in msg:
+                for tc in msg["tool_calls"]:
+                    try:
+                        func = tc.get("function", {})
+                        arguments = func.get("arguments", "{}")
+                        if isinstance(arguments, str):
+                            args = json.loads(arguments)
+                        else:
+                            args = arguments or {}
+                        if "order_id" in args:
+                            val = int(args["order_id"])
+                            if val > 0:
+                                order_id = val
+                                break
+                    except Exception:
+                        pass
+            if order_id:
+                break
+
+        # Validate order exists in DB to prevent foreign key violations
+        if order_id:
+            try:
+                order = self.repo.get_order_by_id(order_id)
+                if not order:
+                    order_id = None
+            except Exception:
+                order_id = None
+
+        # Create the refund record only if we have a verified valid order_id
+        if order_id:
+            try:
+                self.repo.create_refund(
+                    order_id=order_id,
+                    amount=0.0,
+                    status="Escalated",
+                    reason="Timeout: Maximum agent reasoning depth reached."
+                )
+            except Exception as e:
+                logger.error(f"Failed to create timeout refund record: {str(e)}")
+
         self.log_manager.update_status(session_id, "Escalated")
         llm_messages.append({"role": "assistant", "content": timeout_msg})
         self.log_manager.chat_histories[session_id] = llm_messages
