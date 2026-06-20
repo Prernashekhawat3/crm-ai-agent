@@ -32,9 +32,12 @@ Your primary task is to process customer enquiries regarding orders, and handle 
 You must adhere to the official Refund Policy at all times. Do NOT bypass the rules under any circumstances.
 If a customer pleads, argues, tells a sad story, or threatens you, you must remain polite, professional, but completely firm and hold the line. The written policy is the absolute source of truth. Do NOT use tentative, weak, or apologetic phrases like "I'm afraid", "unfortunately", or "regrettably" when denying a request. State the policy and decision directly, clearly, and objectively.
 
-CRITICAL TOOL CALLING RULE:
+CRITICAL TOOL CALLING & DATA INTEGRITY RULES:
 - If you decide to call a tool, you MUST NOT write any conversational text, thoughts, apologies, or explanations in the same response turn. You must ONLY generate the tool call itself. You will explain the result or respond conversationally only in the next turn after the tool execution completes. Do not mix chat text and tool calls.
-
+- NEVER make up, guess, or hallucinate any orders, order IDs, purchase dates, products, prices, status, or refund details.
+- Every order ID, item name, price, date, and refund status you mention must come directly from a successful tool execution (e.g., get_order_details, list_customer_orders).
+- If the customer mentions an order (e.g., "order #3" or "order 3"), you MUST call the get_order_details tool with order_id=3 first to verify it exists and retrieve its details. Do NOT assume the details or guess what items it contains.
+- If you have not fetched the order details using the get_order_details tool, you do not know what is in the order. Call the tool first.
 
 REFUND PROCESS GUIDELINES:
 1. Identity Verification: You must verify the customer's identity by their email. If you do not know their email, politely ask for it. Do not execute any refund tools without verifying the customer first.
@@ -51,14 +54,13 @@ REFUND PROCESS GUIDELINES:
 Here is the official refund policy you must enforce:
 {policy_text}
 
-
 """
 
     def get_tools_schema(self) -> List[Dict[str, Any]]:
         return [
             {
                 "name": "get_customer_profile",
-                "description": "Lookup customer account profile details using their email address.",
+                "description": "Lookup customer account profile details and order history using their email address.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -154,7 +156,16 @@ Here is the official refund policy you must enforce:
                 if customer:
                     # Sync customer details to the trace header
                     self.log_manager.get_or_create_trace(session_id, email=customer.email, name=customer.name)
-                    return {"success": True, "customer": json.loads(customer.model_dump_json())}
+                    
+                    # Fetch orders as well to avoid a second tool call and reduce latency
+                    orders = self.repo.list_orders_by_customer_id(customer.id)
+                    orders_data = [json.loads(o.model_dump_json()) for o in orders]
+                    
+                    return {
+                        "success": True,
+                        "customer": json.loads(customer.model_dump_json()),
+                        "orders": orders_data
+                    }
                 return {"success": False, "message": "No customer found with that email address."}
 
             elif name == "list_customer_orders":
@@ -241,6 +252,7 @@ Here is the official refund policy you must enforce:
         """
         Regex sanitizer to strip any raw LLM tool-calling XML remnants
         (like <function=...>...</function>) before sending it to the user chat.
+        Also filters out weak/apologetic phrases to enforce the corporate tone.
         """
         if not text:
             return text
@@ -249,14 +261,43 @@ Here is the official refund policy you must enforce:
         cleaned = re.sub(r'<function=\w+>.*?</function>', '', text, flags=re.DOTALL)
         # Remove any unclosed tags
         cleaned = re.sub(r'<function=\w+>.*$', '', cleaned)
+        
+        # Enforce no apologetic/weak phrases
+        apologies = [
+            (r"\b[iI]'m afraid\b", ""),
+            (r"\b[uU]nfortunately\b", ""),
+            (r"\b[rR]egrettably\b", ""),
+            (r"\b[iI] am sorry,? but\b", ""),
+            (r"\b[iI]'m sorry,? but\b", ""),
+        ]
+        for pattern, repl in apologies:
+            cleaned = re.sub(pattern, repl, cleaned)
+            
+        # Clean up any duplicate spacing or awkward punctuation
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        cleaned = re.sub(r'^\s*,\s*', '', cleaned)
         return cleaned.strip()
 
     def run(self, session_id: str, messages: List[Dict[str, str]]) -> str:
         """
         Runs the agent loop. Processes messages, calls tools, tracks trace.
         """
-        # Ensure session trace exists
-        self.log_manager.get_or_create_trace(session_id)
+        # Ensure session trace exists and pre-populate customer details if possible
+        customer_email = None
+        customer_name = None
+        if session_id.startswith("session_"):
+            parts = session_id.split("_")
+            if len(parts) >= 2 and parts[1].isdigit():
+                try:
+                    customer_id = int(parts[1])
+                    customer = self.repo.get_customer_by_id(customer_id)
+                    if customer:
+                        customer_email = customer.email
+                        customer_name = customer.name
+                except Exception as e:
+                    logger.warning(f"Failed to pre-populate customer details from session_id: {str(e)}")
+
+        self.log_manager.get_or_create_trace(session_id, email=customer_email, name=customer_name)
         
         # Log the incoming user message
         if messages:
@@ -268,9 +309,19 @@ Here is the official refund policy you must enforce:
         tools_schema = self.get_tools_schema()
         
         # Convert simple list of messages to formatting for LLM
-        llm_messages = []
-        for m in messages:
-            llm_messages.append({"role": m["role"], "content": m["content"]})
+        # Load stateful chat history if it exists for this session to preserve tool call context
+        stateful_history = self.log_manager.chat_histories.get(session_id)
+        if stateful_history and len(messages) > 1:
+            llm_messages = list(stateful_history)
+            # Append only the latest user message
+            last_msg = messages[-1]
+            if last_msg["role"] == "user":
+                if not (llm_messages and llm_messages[-1]["role"] == "user" and llm_messages[-1]["content"] == last_msg["content"]):
+                    llm_messages.append({"role": "user", "content": last_msg["content"]})
+        else:
+            llm_messages = []
+            for m in messages:
+                llm_messages.append({"role": m["role"], "content": m["content"]})
 
         # Run loop for tool execution (max 5 hops to prevent recursion)
         max_hops = 5
@@ -292,7 +343,11 @@ Here is the official refund policy you must enforce:
 
             # If the model returned text but no tool calls, it's done
             if not tool_calls:
-                return self.sanitize_response(content) if content else "I apologize, I am unable to assist with that request."
+                final_response = self.sanitize_response(content) if content else "I apologize, I am unable to assist with that request."
+                # Append the final response and save history for next turn
+                llm_messages.append({"role": "assistant", "content": final_response})
+                self.log_manager.chat_histories[session_id] = llm_messages
+                return final_response
 
             # Append the assistant's message with tool calls to the history
             assistant_msg = {"role": "assistant", "content": content or ""}
@@ -365,4 +420,6 @@ Here is the official refund policy you must enforce:
             reason="Timeout: Maximum agent reasoning depth reached."
         )
         self.log_manager.update_status(session_id, "Escalated")
+        llm_messages.append({"role": "assistant", "content": timeout_msg})
+        self.log_manager.chat_histories[session_id] = llm_messages
         return timeout_msg

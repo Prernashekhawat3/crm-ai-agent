@@ -6,7 +6,8 @@
     "db": "docker-compose up -d",
     "backend": "cd backend && PYTHONPATH=. .venv/bin/uvicorn app.main:app --port 8000",
     "frontend": "cd frontend && npm run dev",
-    "dev": "npm run db && npx concurrently --names \"DB,API,WEB\" -c \"gray,magenta,cyan\" \"echo 'Postgres running...'\" \"npm run backend\" \"npm run frontend\""
+    "dev": "npm run db && npx concurrently --names \"DB,API,WEB\" -c \"gray,magenta,cyan\" \"echo 'Postgres running...'\" \"npm run backend\" \"npm run frontend\"",
+    "dev:sqlite": "npx concurrently --names \"API,WEB\" -c \"magenta,cyan\" \"DATABASE_URL= POSTGRES_URL= npm run backend\" \"npm run frontend\""
   },
   "dependencies": {
     "concurrently": "^8.2.2"

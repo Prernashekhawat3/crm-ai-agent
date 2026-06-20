@@ -36,6 +36,7 @@ class ReasoningLogManager:
         if not cls._instance:
             cls._instance = super(ReasoningLogManager, cls).__new__(cls, *args, **kwargs)
             cls._instance.traces = {}
+            cls._instance.chat_histories = {}
         return cls._instance
 
     def get_or_create_trace(self, session_id: str, email: str = None, name: str = None) -> SessionTrace:
@@ -120,3 +121,4 @@ class ReasoningLogManager:
 
     def clear(self) -> None:
         self.traces.clear()
+        self.chat_histories.clear()

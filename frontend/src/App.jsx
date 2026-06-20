@@ -71,6 +71,21 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoadingAgent]);
 
+  // Poll telemetry in real-time while agent is reasoning
+  useEffect(() => {
+    let intervalId = null;
+    if (isLoadingAgent) {
+      // Immediate fetch when starting
+      fetchAdminTelemetry();
+      intervalId = setInterval(() => {
+        fetchAdminTelemetry();
+      }, 500);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isLoadingAgent]);
+
   const fetchCRMData = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/crm/customers`);
@@ -94,8 +109,14 @@ function App() {
       const dataMetrics = await resMetrics.json();
       setMetrics(dataMetrics);
 
-      // Auto-select first session if none selected or if selected session is in logs
-      if (dataLogs.length > 0 && !selectedSession) {
+      // Auto-select the active session if it exists in the logs
+      const activeTrace = dataLogs.find(s => s.session_id === sessionId);
+      if (activeTrace) {
+        setSelectedSession(activeTrace);
+      } else if (sessionId) {
+        // If there is an active session but no trace is recorded yet, do not show fallback logs
+        setSelectedSession(null);
+      } else if (dataLogs.length > 0 && !selectedSession) {
         setSelectedSession(dataLogs[0]);
       } else if (selectedSession) {
         const updated = dataLogs.find(s => s.session_id === selectedSession.session_id);
@@ -110,6 +131,7 @@ function App() {
     setActiveCustomer(customer);
     const newSessionId = `session_${customer.id}_${Date.now().toString().slice(-4)}`;
     setSessionId(newSessionId);
+    setSelectedSession(null); // Clear previous trace logs when customer changes
     setMessages([
       {
         role: "assistant",
@@ -463,7 +485,7 @@ function App() {
                   </div>
 
                   {/* CHOSEN SESSION STEPS DETAIL */}
-                  <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
                     {selectedSession ? (
                       <>
                         <div style={{ 
@@ -483,7 +505,7 @@ function App() {
                           </span>
                         </div>
                         
-                        <div className="trace-steps-container" style={{ flex: 1, overflowY: "auto" }}>
+                        <div className="trace-steps-container" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
                           {selectedSession.steps.map((step, idx) => (
                             <div key={idx} className="step-card">
                               <div className={`step-header step-header-${step.step_type}`}>
